@@ -8,6 +8,10 @@ class SpamDatasource(object):
             self._data_path, sep='\t', header=None, names=['Label', 'SMS'])
         self._split = train_test_split
     
+    @property
+    def vocabulary(self):
+        return self._vocabulary
+    
     def get_dataframes(self):
 
         # shuffle the data entries
@@ -31,6 +35,7 @@ class SpamDatasource(object):
             for word in sms:
                 vocabulary.append(word)
         vocabulary = list(set(vocabulary))
+        self._vocabulary = vocabulary
         
         # prepare grid for storing entity frequencies
 

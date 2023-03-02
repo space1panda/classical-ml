@@ -3,67 +3,73 @@ Naive Bayes implementation for solving SMS spam filter task. Based on the KDNugg
 https://www.kdnuggets.com/2020/06/naive-bayes-algorithm-everything.html 
 """
 
-import numpy as np
-import os
+
+class TabularNaiveBayesClassifier:
+    def __init__(self, vocabulary, num_classes=2, smoothing=1):
+        self._smoothing = smoothing
+        self._parameters = None
+        self._vocabulary = vocabulary
+        self._num_classes = num_classes
+        
+        self.init_params()
+    
+    @property
+    def parameters(self):
+        return self._parameters
+
+    def init_params(self):
+        self._parameters = {}
+        for i in range(self._num_classes):
+            self._parameters[str(i)] = {entity: 0 for entity in self._vocabulary}
 
 
-# 1. Import data corpus
+    def fit(self, data):
+        # # Isolating spam and ham messages first
+        spam_messages = data[data['Label'] == 'spam']
+        ham_messages = data[data['Label'] == 'ham']
 
-data_root = '/home/spacepanda/workspace/real_data'
-f_name = 'SMSSpamCollection'
-num_classes = 2
+        # prior
 
-with open(os.path.join(data_root, f_name), 'r') as fr:
-    data_corpus = fr.readlines()
+        # p_spam = len(spam_messages) / len(data)
+        # p_ham = len(ham_messages) / len(data)
 
-"""
-The Spam data consists of examples of word sequences classified as spam ('spam') or no-spam ('ham'). Our task is to learn
-the posterior probability of the sequence being spam or no-spam. To simplify the modelling of the likelihood of the Bayes' Theorem,
-we will use Naive Bayes assumption, which implies conditional independece of the events. Given that, the joint likelihood of that message belongs
-to some class, simplifies to the product of message feature frequencies in the given class.
-"""
+        # # N_Spam - total number of entities in spam messages
+        n_words_per_spam_message = spam_messages['SMS'].apply(len)
+        n_spam = n_words_per_spam_message.sum()
 
-# 2. Define the func to calculate posterior distribution. We use a classic Bayes Theorem for each class:
+        # # N_Ham - total number of entities in spam messages
+        n_words_per_ham_message = ham_messages['SMS'].apply(len)
+        n_ham = n_words_per_ham_message.sum()
 
-get_class_posterior = lambda class_prior, features_likelihood: class_prior * features_likelihood
+        # # N_Vocabulary
+        n_vocabulary = len(self._vocabulary)
 
-# Our final classifier is an argmax of the predicted posterior probs of each class
+        # Initiate parameters
 
-def nb_classifier(num_classes, class_priors, input):
-    class_probs = []
-    for c in range(num_classes):
-        class_probs.append(get_class_posterior(class_priors[c], get_likelihood(input, c)))
-    return np.argmax(class_probs)
+        # Calculate parameters
+        for word in self._vocabulary:
+            n_word_given_spam = spam_messages[word].sum() # spam_messages already defined
+            p_word_given_spam = (n_word_given_spam + self._smoothing) / (n_spam + self._smoothing * n_vocabulary)
+            self._parameters['0'][word] = p_word_given_spam
 
-"""
-In accordance with the Bayes Theorem, we are updating our prior belief about the class (which is simply a frequency of the class in the
-data observed)
-with the evidence that particular words (features) have higher chance of appearance in the class. The marginal probability
-of the evidence is dropped down  because it's constant for all classes of the dataset, and serves only as a normalization factor.
-We may or may not add it, it's irrelevant for classes scoring. Given the input features (word sequence), we can then calculate the posterior
-probability for each class
-"""
-
-def get_likelihood(features, lookup, c):
-    total_lh = 1
-    for feature in features:
-        f_lh = lookup[feature, c]
-        total_lh *= f_lh
-    return total_lh
+            n_word_given_ham = ham_messages[word].sum() # ham_messages already defined
+            p_word_given_ham = (n_word_given_ham + self._smoothing) / (n_ham + self._smoothing * n_vocabulary)
+            self._parameters['1'] = p_word_given_ham
 
 
-# Now, let's get back to data and make some preparations. We should arrive at having training/test sets as well as likelihood tables
-# for each unique feature (word) in corpus;
+    def predict(self, data):
+        pred_cls = None
+        return pred_cls
 
-import pandas as pd
 
-sms_spam = pd.read_csv(
-    os.path.join(data_root, f_name), sep='\t', header=None, names=['Label', 'SMS'])
-class_priors = sms_spam['Label'].value_counts(normalize=True)
-print(sms_spam)
-print(dict(class_priors))
+if __name__ == '__main__':
+    from data_processing.spam_datasource import SpamDatasource
+    datasource = SpamDatasource(data_path='/home/spacepanda/workspace/projects/classical-ml/dataset/spam.csv')
+    trainset, testset = datasource.get_dataframes()
+    voc = datasource.vocabulary
+    model = TabularNaiveBayesClassifier(vocabulary=voc)
+    print(model.parameters)
+    model.fit(trainset)
+    print(model.parameters)
 
-for prior in class_priors:
-    print(prior)
-  
 
