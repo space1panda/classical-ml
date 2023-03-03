@@ -3,14 +3,16 @@ Naive Bayes implementation for solving SMS spam filter task. Based on the KDNugg
 https://www.kdnuggets.com/2020/06/naive-bayes-algorithm-everything.html 
 """
 
+import re
+from collections import defaultdict
+import numpy as np
+
 
 class TabularNaiveBayesClassifier:
     def __init__(self, vocabulary, num_classes=2, smoothing=1):
         self._smoothing = smoothing
-        self._parameters = None
         self._vocabulary = vocabulary
         self._num_classes = num_classes
-        
         self.init_params()
     
     @property
@@ -18,20 +20,19 @@ class TabularNaiveBayesClassifier:
         return self._parameters
 
     def init_params(self):
-        self._parameters = {}
+        self._parameters = defaultdict(dict)
         for i in range(self._num_classes):
-            self._parameters[str(i)] = {entity: 0 for entity in self._vocabulary}
-
+            self._parameters[str(i)]['likelihood'] = {entity: 0 for entity in self._vocabulary}
+            self._parameters[str(i)]['prior'] = 0
 
     def fit(self, data):
         # # Isolating spam and ham messages first
         spam_messages = data[data['Label'] == 'spam']
         ham_messages = data[data['Label'] == 'ham']
 
-        # prior
-
-        # p_spam = len(spam_messages) / len(data)
-        # p_ham = len(ham_messages) / len(data)
+        # priorss
+        self._parameters['0']['prior'] = len(spam_messages) / len(data)
+        self._parameters['1']['prior'] = len(ham_messages) / len(data)
 
         # # N_Spam - total number of entities in spam messages
         n_words_per_spam_message = spam_messages['SMS'].apply(len)
@@ -50,16 +51,27 @@ class TabularNaiveBayesClassifier:
         for word in self._vocabulary:
             n_word_given_spam = spam_messages[word].sum() # spam_messages already defined
             p_word_given_spam = (n_word_given_spam + self._smoothing) / (n_spam + self._smoothing * n_vocabulary)
-            self._parameters['0'][word] = p_word_given_spam
+            self._parameters['0']['likelihood'][word] = p_word_given_spam
 
             n_word_given_ham = ham_messages[word].sum() # ham_messages already defined
             p_word_given_ham = (n_word_given_ham + self._smoothing) / (n_ham + self._smoothing * n_vocabulary)
-            self._parameters['1'] = p_word_given_ham
+            self._parameters['1']['likelihood'][word] = p_word_given_ham
 
 
-    def predict(self, data):
-        pred_cls = None
-        return pred_cls
+    def predict(self, input):
+        message = re.sub('\W', ' ', input)
+        message = message.lower().split()
+        probs = [p['prior'] for p in self._parameters.values()]
+
+        for word in input:
+            for idx, params in self._parameters.items():
+                likelihood = params['likelihood']
+                print(likelihood)
+                word_likelihood = likelihood.get(word)
+                if word_likelihood is not None:
+                    probs[int(idx)] *= word_likelihood
+        print(probs)
+        return np.argmax(probs)
 
 
 if __name__ == '__main__':
@@ -68,8 +80,9 @@ if __name__ == '__main__':
     trainset, testset = datasource.get_dataframes()
     voc = datasource.vocabulary
     model = TabularNaiveBayesClassifier(vocabulary=voc)
-    print(model.parameters)
     model.fit(trainset)
-    print(model.parameters)
-
-
+    
+    message = 'SUPER PRIZE! MONEY HERE!'
+    c = model.predict(message)
+    print(message)
+    print(c)
