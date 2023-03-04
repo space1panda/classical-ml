@@ -2,15 +2,20 @@ import pandas as pd
 
 
 class SpamDatasource(object):
-    def __init__(self, data_path, mode='train', train_test_split=0.8):
+    def __init__(self, data_path, mode='train', classes=['spam', 'ham'], train_test_split=0.8):
         self._data_path = data_path
         self._df = pd.read_csv(
             self._data_path, sep='\t', header=None, names=['Label', 'SMS'])
         self._split = train_test_split
+        self._classes = classes
     
     @property
     def vocabulary(self):
         return self._vocabulary
+    
+    @property
+    def classes(self):
+        return self._classes
     
     def get_dataframes(self):
 
@@ -24,7 +29,7 @@ class SpamDatasource(object):
 
         # cleaning
 
-        training_set['SMS'] = training_set['SMS'].str.replace('\W', ' ') # Removes punctuation
+        training_set['SMS'] = training_set['SMS'].str.replace('\W', ' ', regex=True) # Removes punctuation
         training_set['SMS'] = training_set['SMS'].str.lower()
 
         # Split SMS sequences into entities and save unique enitities

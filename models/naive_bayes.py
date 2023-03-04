@@ -56,21 +56,31 @@ class TabularNaiveBayesClassifier:
             n_word_given_ham = ham_messages[word].sum() # ham_messages already defined
             p_word_given_ham = (n_word_given_ham + self._smoothing) / (n_ham + self._smoothing * n_vocabulary)
             self._parameters['1']['likelihood'][word] = p_word_given_ham
-
+    
+    def evaluate(self, data):
+        preds = list(data['SMS'].apply(self.predict))
+        gt = list(data['Label'].apply(lambda x: {'spam': 0, 'ham': 1}[x]))
+        accuracy = self.get_classifier_accuracy(gt, preds)
+        print(f"Total accuracy: {accuracy}")
+    
+    def get_classifier_accuracy(self, gt, preds):
+        gt = np.array(gt)
+        preds = np.array(preds)
+        total = len(gt)
+        tptn = len(gt[gt == preds])
+        return round(tptn / total, 4)
 
     def predict(self, input):
         message = re.sub('\W', ' ', input)
         message = message.lower().split()
         probs = [p['prior'] for p in self._parameters.values()]
 
-        for word in input:
+        for word in message:
             for idx, params in self._parameters.items():
                 likelihood = params['likelihood']
-                print(likelihood)
                 word_likelihood = likelihood.get(word)
                 if word_likelihood is not None:
                     probs[int(idx)] *= word_likelihood
-        print(probs)
         return np.argmax(probs)
 
 
@@ -81,8 +91,8 @@ if __name__ == '__main__':
     voc = datasource.vocabulary
     model = TabularNaiveBayesClassifier(vocabulary=voc)
     model.fit(trainset)
-    
-    message = 'SUPER PRIZE! MONEY HERE!'
-    c = model.predict(message)
-    print(message)
-    print(c)
+    model.evaluate(testset)
+    # message = 'Meet you downstairs'
+    # label = model.predict(message)
+    # print(message)
+    # print(datasource.classes[label])
