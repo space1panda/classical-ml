@@ -8,10 +8,15 @@ from collections import defaultdict
 import numpy as np
 
 
-class TabularNaiveBayesClassifier:
+class NaiveBayesClassifier:
+    """
+    The model fits categorical data by optimizing the likelihood of the features using Bayesian inference assuming the features
+    in each example set are independent and equivariant. The features likelihood defines the set of parameters of categorcial distribution
+    used for predictions during inference.
+    """
     def __init__(self, vocabulary, num_classes=2, smoothing=1):
         self._smoothing = smoothing
-        self._vocabulary = vocabulary
+        self._vocabular = vocabulary
         self._num_classes = num_classes
         self.init_params()
     
@@ -89,7 +94,7 @@ if __name__ == '__main__':
     datasource = SpamDatasource(data_path='/home/spacepanda/workspace/projects/classical-ml/dataset/spam.csv')
     trainset, testset = datasource.get_dataframes()
     voc = datasource.vocabulary
-    model = TabularNaiveBayesClassifier(vocabulary=voc)
+    model = NaiveBayesClassifier(vocabulary=voc)
     model.fit(trainset)
     model.evaluate(testset)
     # message = 'Meet you downstairs'
