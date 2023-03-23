@@ -14,6 +14,7 @@ class NaiveBayesClassifier:
     The object updates relative frequencies learnt from data on the call. These
     are parameters of the model, thus obtaining them can be defined as a
     training process.
+
     """
 
     def __init__(self, datasource, num_classes=2, laplacian_smoothing=1):
