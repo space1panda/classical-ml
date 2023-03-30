@@ -4,3 +4,4 @@ Implementation of classical supervised and unsupervised machine learning algorit
 Solutions:
 
 1. Naive Bayes Classifier (Spam detection);
+2.
